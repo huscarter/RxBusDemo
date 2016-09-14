@@ -1,17 +1,16 @@
-package com.whh.rxbusdemo;
+package com.whh.rxbusdemo.rxbus;
 
 import android.util.Log;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import rx.Observable;
 import rx.Scheduler;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
@@ -26,7 +25,7 @@ import rx.subjects.Subject;
 public class RxBus {
     private static final String TAG = RxBus.class.getSimpleName();
     private static RxBus instance;
-    private ConcurrentHashMap<Object, List<RxSubject>> subject_map = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Object, List<Subject>> subject_map = new ConcurrentHashMap<>();
     private HashMap<Object, Subject> single_map = new HashMap<>();
 
     /**
@@ -55,10 +54,10 @@ public class RxBus {
      * @param key 注册标示
      * @return register 注册的对象
      */
-    public Observable register(Object key, Object register) {
+    public Observable register(final Object key, final Object register) {
         String tag = key + register.getClass().getSimpleName();
         Subject subject = single_map.get(tag);
-        List<RxSubject> subjects = subject_map.get(key);
+        List<Subject> subjects = subject_map.get(key);
         if (null == subject) {
             subject = PublishSubject.create();
             single_map.put(tag, subject);
@@ -68,9 +67,19 @@ public class RxBus {
             subject_map.put(key, subjects);
         }
         if (!subjects.contains(subject)) {
-            subjects.add(new RxSubject(subject, register));
+            subjects.add(subject);
         }
         Log.i(TAG, "register single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
+        subject.subscribe(new Action1<Object>() {
+            @Override
+            public void call(Object content) {
+                try {
+                    getMethod(register).invoke(register, key,content);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
         return subject;
     }
 
@@ -83,7 +92,7 @@ public class RxBus {
     public void unregister(Object key, Object register) {
         String tag = key + register.getClass().getSimpleName();
         Subject subject = single_map.get(tag);
-        List<RxSubject> subjects = subject_map.get(key);
+        List<Subject> subjects = subject_map.get(key);
         if (null != subjects) {
             if (null != subject) {
                 subjects.remove(subject);
@@ -113,22 +122,13 @@ public class RxBus {
      * @param content
      */
     public void send(Object key, Object content, Scheduler scheduler) {
-        List<RxSubject> subjects = subject_map.get(key);
+        List<Subject> subjects = subject_map.get(key);
 
         if (subjects != null && subjects.size() > 0) {
-            for (final RxSubject subject : subjects) {
-                subject.subject.subscribeOn(scheduler)
-                        .subscribe(new Action1<Object>() {
-                            @Override
-                            public void call(Object content) {
-                                try {
-                                    getMethod(subject.register).invoke(subject.register, content);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                subject.subject.onNext(content);
+            for (final Subject subject : subjects) {
+                subject.subscribeOn(scheduler)
+                .observeOn(AndroidSchedulers.mainThread());
+                subject.onNext(content);
             }
         }
     }
@@ -137,11 +137,7 @@ public class RxBus {
         Class clazz = object.getClass();
         Method method = null;
         try {
-            method = clazz.getMethod("onRxEvent", Object.class);
-//            int modifier=method.getModifiers();
-//            if((modifier& Modifier.PUBLIC)==0){
-//                new IllegalAccessException("The access modifier of the method is not public").printStackTrace();
-//            }
+            method = clazz.getMethod("onRxEvent", EventType.class,Object.class);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }

@@ -13,7 +13,6 @@
         android:layout_margin="@dimen/activity_vertical_margin"
         android:layout_height="56dp" />
 
-
     <TextView
         android:id="@+id/tv"
         android:text="to show rx message"
@@ -24,12 +23,5 @@
         android:layout_width="match_parent"
         android:background="@android:color/darker_gray"
         android:layout_height="48dp" />
-
-    <Button
-        android:id="@+id/btn_start"
-        android:layout_width="match_parent"
-        android:text="start activity"
-        android:layout_margin="@dimen/activity_vertical_margin"
-        android:layout_height="56dp" />
 
 </LinearLayout>

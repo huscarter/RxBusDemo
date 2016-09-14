@@ -1,10 +1,11 @@
-package com.whh.rxbusdemo;
+package com.whh.rxbusdemo.activity;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 
-import rx.subscriptions.CompositeSubscription;
+import com.whh.rxbusdemo.rxbus.RxBus;
 
 /**
  * @author huscarter@163.com
@@ -14,6 +15,7 @@ import rx.subscriptions.CompositeSubscription;
  */
 public abstract class BaseActivity extends AppCompatActivity{
     protected RxBus rxbus;
+    protected Context context;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -26,6 +28,7 @@ public abstract class BaseActivity extends AppCompatActivity{
     }
 
     private void baseInit(){
+        context=this;
         rxbus=RxBus.getInstance();
     }
 

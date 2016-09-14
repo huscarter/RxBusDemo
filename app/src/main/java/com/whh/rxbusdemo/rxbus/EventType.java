@@ -1,4 +1,4 @@
-package com.whh.rxbusdemo;
+package com.whh.rxbusdemo.rxbus;
 
 /**
  * Author:
