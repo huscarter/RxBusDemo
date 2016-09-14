@@ -14,7 +14,6 @@ import rx.subscriptions.CompositeSubscription;
  */
 public abstract class BaseActivity extends AppCompatActivity{
     protected RxBus rxbus;
-    protected CompositeSubscription rx_subscription;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {

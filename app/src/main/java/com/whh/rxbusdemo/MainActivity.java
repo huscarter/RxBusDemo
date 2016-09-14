@@ -17,31 +17,35 @@ public class MainActivity extends BaseActivity {
     }
 
     @Override
-    public void init(){
-        btn=(Button)findViewById(R.id.btn);
+    public void init() {
+        btn = (Button) findViewById(R.id.btn);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(RxEvent.ORDER,"the rx event"+ System.currentTimeMillis());
+                rxbus.send(EventType.ORDER, System.currentTimeMillis());
             }
         });
-        tv=(TextView) findViewById(R.id.tv);
+        tv = (TextView) findViewById(R.id.tv);
+    }
 
+    /**
+     *
+     * @param content
+     */
+    public void onRxEvent(Object content){
+        tv.setText(content+",hello");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        rxbus.register(RxEvent.ORDER).subscribe(new Action1<Object>() {
-            @Override
-            public void call(Object obj) {
-                tv.setText(obj+"");
-            }
-        });
+        rxbus.register(EventType.ORDER, this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        rxbus.unregister(EventType.ORDER, this);
     }
+
 }

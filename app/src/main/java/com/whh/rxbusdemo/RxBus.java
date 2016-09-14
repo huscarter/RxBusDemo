@@ -1,10 +1,19 @@
 package com.whh.rxbusdemo;
 
+import android.util.Log;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import rx.Observable;
+import rx.Scheduler;
+import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -15,9 +24,14 @@ import rx.subjects.Subject;
  * @date 9/10/16
  */
 public class RxBus {
+    private static final String TAG = RxBus.class.getSimpleName();
     private static RxBus instance;
-    private ConcurrentHashMap<Object, List<Subject>> subject_map = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Object, List<RxSubject>> subject_map = new ConcurrentHashMap<>();
+    private HashMap<Object, Subject> single_map = new HashMap<>();
 
+    /**
+     * 单例私有构造方法
+     */
     private void RxBus() {
         //
     }
@@ -39,49 +53,99 @@ public class RxBus {
      * A和B页面的被监视者会发送内容为content的事件,从而触发A/B页面的事件回调实现事件监听.
      *
      * @param key 注册标示
-     * @return Observable 被监视者
+     * @return register 注册的对象
      */
-    public <T> Observable<T> register(Object key) {
-        List<Subject> subjects = subject_map.get(key);
+    public Observable register(Object key, Object register) {
+        String tag = key + register.getClass().getSimpleName();
+        Subject subject = single_map.get(tag);
+        List<RxSubject> subjects = subject_map.get(key);
+        if (null == subject) {
+            subject = PublishSubject.create();
+            single_map.put(tag, subject);
+        }
         if (null == subjects) {
             subjects = new ArrayList<>();
             subject_map.put(key, subjects);
         }
-
-        Subject<T, T> subject = PublishSubject.create();
-
-        subjects.add(subject);
+        if (!subjects.contains(subject)) {
+            subjects.add(new RxSubject(subject, register));
+        }
+        Log.i(TAG, "register single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
         return subject;
     }
 
     /**
      * 取消监视,删除被监视者.
+     *
      * @param key
-     * @param observable
+     * @param register
      */
-    public void unregister(Object key, Observable observable) {
-        List<Subject> subjects = subject_map.get(key);
+    public void unregister(Object key, Object register) {
+        String tag = key + register.getClass().getSimpleName();
+        Subject subject = single_map.get(tag);
+        List<RxSubject> subjects = subject_map.get(key);
         if (null != subjects) {
-            subjects.remove(observable);
+            if (null != subject) {
+                subjects.remove(subject);
+                single_map.remove(tag);
+            }
             if (subjects.size() == 0) {
                 subject_map.remove(key);
             }
         }
+        Log.i(TAG, "unregister single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
     }
 
     /**
      * 事件发送.
+     *
      * @param key
      * @param content
      */
     public void send(Object key, Object content) {
-        List<Subject> subjects = subject_map.get(key);
+        send(key, content, Schedulers.newThread());
+    }
+
+    /**
+     * 事件发送.
+     *
+     * @param key
+     * @param content
+     */
+    public void send(Object key, Object content, Scheduler scheduler) {
+        List<RxSubject> subjects = subject_map.get(key);
 
         if (subjects != null && subjects.size() > 0) {
-            for (Subject subject : subjects) {
-                subject.onNext(content);
+            for (final RxSubject subject : subjects) {
+                subject.subject.subscribeOn(scheduler)
+                        .subscribe(new Action1<Object>() {
+                            @Override
+                            public void call(Object content) {
+                                try {
+                                    getMethod(subject.register).invoke(subject.register, content);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                subject.subject.onNext(content);
             }
         }
+    }
+
+    private Method getMethod(Object object) {
+        Class clazz = object.getClass();
+        Method method = null;
+        try {
+            method = clazz.getMethod("onRxEvent", Object.class);
+//            int modifier=method.getModifiers();
+//            if((modifier& Modifier.PUBLIC)==0){
+//                new IllegalAccessException("The access modifier of the method is not public").printStackTrace();
+//            }
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+        return method;
     }
 
 }
