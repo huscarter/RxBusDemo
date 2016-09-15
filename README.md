@@ -29,5 +29,5 @@ Copy the java file in the rxbus package.
 
 screenshot
 -
-![](images/sec.png)
-![](images/main.png)
+![main activity](images/main.png)
+![second activity](images/sec.png)
