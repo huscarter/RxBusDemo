@@ -23,5 +23,5 @@ public void onRxEvent(EventType type,Object content){
 # Add RxBus to your project
 
 # screenshot
-![](/imags/sec.png)
-![](/imags/main.png)
+![](imags/sec.png)
+![](imags/main.png)
