@@ -1,6 +1,5 @@
 package com.whh.rxbusdemo.activity;
 
-import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.view.View;
@@ -43,6 +42,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      *
+     * @param type
      * @param content
      */
     public void onRxEvent(EventType type,Object content){

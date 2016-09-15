@@ -3,7 +3,6 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion COMPILE_SDK_VERSION as int
     buildToolsVersion BUILD_TOOLS_VERSION
-    useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         applicationId APPLICATION_ID
@@ -11,7 +10,6 @@ android {
         targetSdkVersion TARGET_SDK_VERSION as int
         versionCode VERSION_CODE as int
         versionName VERSION_NAME
-        //enabling multidex support
     }
     buildTypes {
         release {
@@ -22,15 +20,15 @@ android {
 }
 
 dependencies {
+    // version def
+    ext {
+        supportVersion = SUPPORT_VERSION
+    }
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     // support
     compile "com.android.support:appcompat-v7:$supportVersion"
-    compile "com.android.support:recyclerview-v7:$supportVersion"
-    compile "com.android.support:design:$supportVersion"
-    compile "com.android.support:cardview-v7:$supportVersion"
     // rx
     compile 'io.reactivex:rxjava:1.0.10'
-    compile 'com.squareup.retrofit:retrofit:1.9.0'
     compile 'io.reactivex:rxandroid:0.25.0'
 }
