@@ -2,7 +2,7 @@
 The demo of RxBus.
 
 # Use
-* 1:register and unregister
+* 1:register and unregister<br/>
 protected void onResume() {
     super.onResume();
     rxbus.register(EventType.NOTICE, this);
@@ -12,10 +12,10 @@ protected void onDestroy() {
     super.onDestroy();
 }
 
-* 2:send event
+* 2:send event<br/>
 rxbus.send(EventType.NOTICE, System.currentTimeMillis()+",Hello World");
 
-* 3:Monitor event method
+* 3:Monitor event method<br/>
 public void onRxEvent(EventType type,Object content){
     // 
 }
@@ -23,5 +23,5 @@ public void onRxEvent(EventType type,Object content){
 # Add RxBus to your project
 
 # screenshot
-![](imags/sec.png)
-![](imags/main.png)
+![](images/sec.png)
+![](images/main.png)
