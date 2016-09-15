@@ -25,7 +25,7 @@ public void onRxEvent(EventType type,Object content){
 
 Add RxBus to your project
 -
-copy the java file in the rxbus package.
+Copy the java file in the rxbus package.
 
 screenshot
 -
