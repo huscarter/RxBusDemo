@@ -1,27 +1,35 @@
-# RxBusDemo
+RxBusDemo
+=
 The demo of RxBus.
 
-# Use
-* 1:register and unregister
+Use
+-
+* 1:register and unregister<br/>
 protected void onResume() {
     super.onResume();
     rxbus.register(EventType.NOTICE, this);
 }
+<br/>
 protected void onDestroy() {
     rxbus.unregister(EventType.NOTICE, this);
     super.onDestroy();
 }
 
-* 2:send event
+* 2:send event<br/>
 rxbus.send(EventType.NOTICE, System.currentTimeMillis()+",Hello World");
 
-* 3:Monitor event method
+* 3:Monitor event method<br/>
 public void onRxEvent(EventType type,Object content){
     // 
 }
 
-# Add RxBus to your project
+Add RxBus to your project
+-
+Copy the java file in the rxbus package.
 
-# screenshot
-![](/imags/sec.png)
-![](/imags/main.png)
+screenshot
+-
+* main activity<br/>
+![](images/main.png)
+* second activity<br/>
+![](images/sec.png)
