@@ -7,6 +7,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.whh.rxbusdemo.R;
+import com.whh.rxbusdemo.rxbus.EventInfo;
 import com.whh.rxbusdemo.rxbus.EventType;
 
 public class MainActivity extends BaseActivity {
@@ -27,7 +28,7 @@ public class MainActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(EventType.ORDER, System.currentTimeMillis()+",main");
+                rxbus.send(EventType.ORDER, new EventInfo(System.currentTimeMillis()+",main"));
             }
         });
         tv = (TextView) findViewById(R.id.tv);

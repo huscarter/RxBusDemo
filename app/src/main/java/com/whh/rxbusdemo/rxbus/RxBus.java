@@ -46,15 +46,19 @@ public class RxBus {
         return instance;
     }
 
+    public Observable register(final Object key, final Object register) {
+        return register(key,register,Schedulers.io());
+    }
+
     /**
-     * 举例说明,现在有2个页面A和B,它们都需要监视改价这一动作,register将改价的标示(CHANGE_PRICE)当作key参数传入,
-     * 返回被监视者,被监视者在A和B页面实现监视.当调用send方法时,,通过传入key值可以获取到A和B页面的被监视者,
-     * A和B页面的被监视者会发送内容为content的事件,从而触发A/B页面的事件回调实现事件监听.
+     * 举例说明,现在有2个页面A和B,它们都需要监视改价这一动作,register将改价的标志(CHANGE_PRICE)当作key参数传入,
+     * 返回被监视者,在A和B页面实现监视.当调用send方法时,通过传入key值可以获取到A和B页面的被监视者,
+     * A和B页面的被监视者会发送内容为content的事件,从而触发A,B页面的事件回调实现事件监听.
      *
      * @param key 注册标示
      * @return register 注册的对象
      */
-    public Observable register(final Object key, final Object register) {
+    public Observable register(final Object key, final Object register,Scheduler scheduler) {
         String tag = key + register.getClass().getSimpleName();
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
@@ -69,7 +73,7 @@ public class RxBus {
         if (!subjects.contains(subject)) {
             subjects.add(subject);
         }
-        Log.i(TAG, "register single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
+        subject.subscribeOn(scheduler).observeOn(AndroidSchedulers.mainThread());
         subject.subscribe(new Action1<Object>() {
             @Override
             public void call(Object content) {
@@ -80,6 +84,7 @@ public class RxBus {
                 }
             }
         });
+        Log.i(TAG, "register single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
         return subject;
     }
 
@@ -112,22 +117,10 @@ public class RxBus {
      * @param content
      */
     public void send(Object key, Object content) {
-        send(key, content, Schedulers.newThread());
-    }
-
-    /**
-     * 事件发送.
-     *
-     * @param key
-     * @param content
-     */
-    public void send(Object key, Object content, Scheduler scheduler) {
         List<Subject> subjects = subject_map.get(key);
 
         if (subjects != null && subjects.size() > 0) {
             for (final Subject subject : subjects) {
-                subject.subscribeOn(scheduler)
-                .observeOn(AndroidSchedulers.mainThread());
                 subject.onNext(content);
             }
         }
