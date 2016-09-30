@@ -6,7 +6,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.whh.rxbusdemo.R;
+import com.whh.rxbusdemo.rxbus.EventInfo;
 import com.whh.rxbusdemo.rxbus.EventType;
+import com.whh.rxbusdemo.rxbus.RxEvent;
 
 public class SecondActivity extends BaseActivity {
     private static final String TAG=SecondActivity.class.getSimpleName();
@@ -24,7 +26,7 @@ public class SecondActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(EventType.ORDER, System.currentTimeMillis()+",second");
+                rxbus.send(EventType.ORDER.HAS_DISPATCH, System.currentTimeMillis()+",second");
             }
         });
         tv = (TextView) findViewById(R.id.tv);
@@ -34,7 +36,7 @@ public class SecondActivity extends BaseActivity {
      *
      * @param content
      */
-    public void onRxEvent(EventType type,Object content){
+    public void onRxEvent(RxEvent type, Object content){
         Log.i(TAG,"type:"+type.equals(EventType.ORDER));
         tv.setText(content+"");
     }

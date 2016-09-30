@@ -9,9 +9,10 @@ import android.widget.TextView;
 import com.whh.rxbusdemo.R;
 import com.whh.rxbusdemo.rxbus.EventInfo;
 import com.whh.rxbusdemo.rxbus.EventType;
+import com.whh.rxbusdemo.rxbus.RxEvent;
 
 public class MainActivity extends BaseActivity {
-    private static final String TAG=MainActivity.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
     private Button btn_send;
     private TextView tv;
     private Button btn_start;
@@ -28,7 +29,7 @@ public class MainActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(EventType.ORDER, new EventInfo(System.currentTimeMillis()+",main"));
+                rxbus.send(EventType.ORDER, new EventInfo(System.currentTimeMillis() + ",main"));
             }
         });
         tv = (TextView) findViewById(R.id.tv);
@@ -36,24 +37,24 @@ public class MainActivity extends BaseActivity {
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(context,SecondActivity.class));
+                startActivity(new Intent(context, SecondActivity.class));
             }
         });
     }
 
     /**
-     *
-     * @param type
+     * @param event
      * @param content
      */
-    public void onRxEvent(EventType type,Object content){
-        Log.i(TAG,"type:"+type.equals(EventType.ORDER));
-        tv.setText(content+"");
+    public void onRxEvent(RxEvent event, Object content) {
+        Log.i(TAG, "event:" + event.equals(EventType.ORDER));
+        tv.setText(content + "");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Log.i(TAG,"EventType.ORDER:"+EventType.ORDER.toString());
         rxbus.register(EventType.ORDER, this);
     }
 

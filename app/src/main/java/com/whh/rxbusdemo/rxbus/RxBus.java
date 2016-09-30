@@ -46,8 +46,8 @@ public class RxBus {
         return instance;
     }
 
-    public Observable register(final Object key, final Object register) {
-        return register(key,register,Schedulers.io());
+    public Observable register(final RxEvent event, final Object register) {
+        return register(event, register, Schedulers.io());
     }
 
     /**
@@ -55,10 +55,11 @@ public class RxBus {
      * 返回被监视者,在A和B页面实现监视.当调用send方法时,通过传入key值可以获取到A和B页面的被监视者,
      * A和B页面的被监视者会发送内容为content的事件,从而触发A,B页面的事件回调实现事件监听.
      *
-     * @param key 注册标示
+     * @param event 注册标示
      * @return register 注册的对象
      */
-    public Observable register(final Object key, final Object register,Scheduler scheduler) {
+    public Observable register(final RxEvent event, final Object register, Scheduler scheduler) {
+        String key = event.toString();
         String tag = key + register.getClass().getSimpleName();
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
@@ -78,7 +79,7 @@ public class RxBus {
             @Override
             public void call(Object content) {
                 try {
-                    getMethod(register).invoke(register, key,content);
+                    getMethod(register).invoke(register, event, content);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -91,10 +92,11 @@ public class RxBus {
     /**
      * 取消监视,删除被监视者.
      *
-     * @param key
+     * @param event
      * @param register
      */
-    public void unregister(Object key, Object register) {
+    public void unregister(final RxEvent event, Object register) {
+        String key = event.toString();
         String tag = key + register.getClass().getSimpleName();
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
@@ -113,10 +115,21 @@ public class RxBus {
     /**
      * 事件发送.
      *
-     * @param key
+     * @param type
      * @param content
      */
-    public void send(Object key, Object content) {
+    public void send(int type, Object content) {
+        send(EventType.getEvent(type), content);
+    }
+
+    /**
+     * 事件发送.
+     *
+     * @param type
+     * @param content
+     */
+    public void send(RxEvent type, Object content) {
+        String key = type.toString();
         List<Subject> subjects = subject_map.get(key);
 
         if (subjects != null && subjects.size() > 0) {
@@ -130,7 +143,7 @@ public class RxBus {
         Class clazz = object.getClass();
         Method method = null;
         try {
-            method = clazz.getMethod("onRxEvent", EventType.class,Object.class);
+            method = clazz.getMethod("onRxEvent", RxEvent.class, Object.class);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
