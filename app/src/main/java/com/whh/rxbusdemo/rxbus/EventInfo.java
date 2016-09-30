@@ -25,7 +25,7 @@ public class EventInfo {
         this.content = content;
     }
 
-    public EventInfo(int position, Object content) {
+    public EventInfo(int type, int position, Object content) {
         this.position = position;
         this.content = content;
     }
@@ -33,7 +33,7 @@ public class EventInfo {
     @Override
     public String toString() {
         return new StringBuffer()
-                .append(",postion:").append(position)
+                .append("postion:").append(position)
                 .append(",content:").append(content).toString();
     }
 

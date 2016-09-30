@@ -8,7 +8,7 @@ import android.widget.TextView;
 
 import com.whh.rxbusdemo.R;
 import com.whh.rxbusdemo.rxbus.EventInfo;
-import com.whh.rxbusdemo.rxbus.EventType;
+import com.whh.rxbusdemo.rxbus.RxEvent;
 import com.whh.rxbusdemo.rxbus.RxEvent;
 
 public class MainActivity extends BaseActivity {
@@ -29,7 +29,7 @@ public class MainActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(EventType.ORDER, new EventInfo(System.currentTimeMillis() + ",main"));
+                rxbus.send(RxEvent.ORDER, new EventInfo(System.currentTimeMillis() + ",main"));
             }
         });
         tv = (TextView) findViewById(R.id.tv);
@@ -47,20 +47,20 @@ public class MainActivity extends BaseActivity {
      * @param content
      */
     public void onRxEvent(RxEvent event, Object content) {
-        Log.i(TAG, "event:" + event.equals(EventType.ORDER));
+        Log.i(TAG, "event:" + event.equals(RxEvent.ORDER));
         tv.setText(content + "");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i(TAG,"EventType.ORDER:"+EventType.ORDER.toString());
-        rxbus.register(EventType.ORDER, this);
+        Log.i(TAG,"RxEvent.ORDER:"+RxEvent.ORDER.toString());
+        rxbus.register(RxEvent.ORDER, this);
     }
 
     @Override
     protected void onDestroy() {
-        rxbus.unregister(EventType.ORDER, this);
+        rxbus.unregister(RxEvent.ORDER, this);
         super.onDestroy();
     }
 

@@ -18,8 +18,12 @@ import rx.subjects.Subject;
 
 /**
  * @author huscarter@163.com
- * @title
+ * @title RxBus核心代码
  * @description
+ * 1:本类记录了注册监听的对象,以及监听事件的类别,通过map将它们关联.
+ * <p>
+ * 2:实现了注册监听,取消注册和发送事件以及调用注册对象的回调.
+ *
  * @date 9/10/16
  */
 public class RxBus {
@@ -119,7 +123,7 @@ public class RxBus {
      * @param content
      */
     public void send(int type, Object content) {
-        send(EventType.getEvent(type), content);
+        send(RxEvent.getEvent(type), content);
     }
 
     /**

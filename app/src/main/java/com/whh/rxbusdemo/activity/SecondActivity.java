@@ -7,7 +7,7 @@ import android.widget.TextView;
 
 import com.whh.rxbusdemo.R;
 import com.whh.rxbusdemo.rxbus.EventInfo;
-import com.whh.rxbusdemo.rxbus.EventType;
+import com.whh.rxbusdemo.rxbus.RxEvent;
 import com.whh.rxbusdemo.rxbus.RxEvent;
 
 public class SecondActivity extends BaseActivity {
@@ -26,7 +26,7 @@ public class SecondActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(EventType.ORDER.HAS_DISPATCH, System.currentTimeMillis()+",second");
+                rxbus.send(RxEvent.ORDER.HAS_DISPATCH, System.currentTimeMillis()+",second");
             }
         });
         tv = (TextView) findViewById(R.id.tv);
@@ -37,19 +37,19 @@ public class SecondActivity extends BaseActivity {
      * @param content
      */
     public void onRxEvent(RxEvent type, Object content){
-        Log.i(TAG,"type:"+type.equals(EventType.ORDER));
+        Log.i(TAG,"type:"+type.equals(RxEvent.ORDER));
         tv.setText(content+"");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        rxbus.register(EventType.ORDER, this);
+        rxbus.register(RxEvent.ORDER, this);
     }
 
     @Override
     protected void onDestroy() {
-        rxbus.unregister(EventType.ORDER, this);
+        rxbus.unregister(RxEvent.ORDER, this);
         super.onDestroy();
     }
 
