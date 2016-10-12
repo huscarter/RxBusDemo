@@ -9,7 +9,6 @@ import android.widget.TextView;
 import com.whh.rxbusdemo.R;
 import com.whh.rxbusdemo.rxbus.EventInfo;
 import com.whh.rxbusdemo.rxbus.RxEvent;
-import com.whh.rxbusdemo.rxbus.RxEvent;
 
 public class MainActivity extends BaseActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -29,7 +28,7 @@ public class MainActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(RxEvent.ORDER, new EventInfo(System.currentTimeMillis() + ",main"));
+                rxbus.send(RxEvent.ORDER.HAS_DISPATCH, new EventInfo(System.currentTimeMillis() + ",main"));
             }
         });
         tv = (TextView) findViewById(R.id.tv);
@@ -37,7 +36,7 @@ public class MainActivity extends BaseActivity {
         btn_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(context, SecondActivity.class));
+                startActivity(new Intent(context, TabhostFragmentActivity.class));
             }
         });
     }
@@ -46,22 +45,29 @@ public class MainActivity extends BaseActivity {
      * @param event
      * @param content
      */
-    public void onRxEvent(RxEvent event, Object content) {
-        Log.i(TAG, "event:" + event.equals(RxEvent.ORDER));
+    public void onRxEvent(RxEvent event, EventInfo content) {
+        Log.i(TAG,"onRxEvent event:"+event+",info:"+content);
         tv.setText(content + "");
+        switch (event.getType()){
+            case RxEvent.OrderEvent.VALUE:
+
+                break;
+            default:
+                break;
+        }
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i(TAG,"RxEvent.ORDER:"+RxEvent.ORDER.toString());
         rxbus.register(RxEvent.ORDER, this);
     }
 
     @Override
     protected void onDestroy() {
-        rxbus.unregister(RxEvent.ORDER, this);
         super.onDestroy();
+        rxbus.unregister(RxEvent.ORDER, this);
     }
 
 }

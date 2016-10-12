@@ -2,6 +2,7 @@ package com.whh.rxbusdemo.rxbus;
 
 import android.util.Log;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,11 +20,9 @@ import rx.subjects.Subject;
 /**
  * @author huscarter@163.com
  * @title RxBus核心代码
- * @description
- * 1:本类记录了注册监听的对象,以及监听事件的类别,通过map将它们关联.
+ * @description 1:本类记录了注册监听的对象,以及监听事件的类别,通过map将它们关联.
  * <p>
  * 2:实现了注册监听,取消注册和发送事件以及调用注册对象的回调.
- *
  * @date 9/10/16
  */
 public class RxBus {
@@ -50,8 +49,40 @@ public class RxBus {
         return instance;
     }
 
+    /**
+     * 事件注册
+     *
+     * @param type
+     * @param register
+     * @return
+     */
+    public Observable register(final int type, final Object register) {
+        return register(type, register, AndroidSchedulers.mainThread());
+    }
+
+    /**
+     * 事件注册
+     *
+     * @param event
+     * @param register
+     * @return
+     */
     public Observable register(final RxEvent event, final Object register) {
-        return register(event, register, Schedulers.io());
+        return register(event.getType(), register, AndroidSchedulers.mainThread());
+    }
+
+    public synchronized Observable register(final int event, final Object register, Scheduler scheduler) {
+        return register(event,register,
+        new Action1<KeyValue>() {
+            @Override
+            public void call(KeyValue obj) {
+                try {
+                    getMethod(register).invoke(register, new RxEvent(obj.getKey()), obj.getValue());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        },scheduler);
     }
 
     /**
@@ -62,14 +93,15 @@ public class RxBus {
      * @param event 注册标示
      * @return register 注册的对象
      */
-    public Observable register(final RxEvent event, final Object register, Scheduler scheduler) {
-        String key = event.toString();
-        String tag = key + register.getClass().getSimpleName();
+    public synchronized Observable register(final int event, final Object register, final Action1 action1,Scheduler scheduler) {
+        String key = event + "";
+        String tag = getUniqueTag(event,register);
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
         if (null == subject) {
             subject = PublishSubject.create();
             single_map.put(tag, subject);
+
         }
         if (null == subjects) {
             subjects = new ArrayList<>();
@@ -77,20 +109,19 @@ public class RxBus {
         }
         if (!subjects.contains(subject)) {
             subjects.add(subject);
+
+            subject.subscribeOn(Schedulers.io())
+                    .observeOn(scheduler)
+                    .subscribe(action1);
+
         }
-        subject.subscribeOn(scheduler).observeOn(AndroidSchedulers.mainThread());
-        subject.subscribe(new Action1<Object>() {
-            @Override
-            public void call(Object content) {
-                try {
-                    getMethod(register).invoke(register, event, content);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        Log.i(TAG, "register single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
+        Log.i(TAG, "register:" + register.getClass().getSimpleName() + "," +
+                "single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
         return subject;
+    }
+
+    public void unregister(final RxEvent event, Object register) {
+        unregister(event.getType(), register);
     }
 
     /**
@@ -99,9 +130,9 @@ public class RxBus {
      * @param event
      * @param register
      */
-    public void unregister(final RxEvent event, Object register) {
-        String key = event.toString();
-        String tag = key + register.getClass().getSimpleName();
+    public void unregister(final int event, Object register) {
+        String key = event + "";
+        String tag = getUniqueTag(event,register);
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
         if (null != subjects) {
@@ -113,7 +144,18 @@ public class RxBus {
                 subject_map.remove(key);
             }
         }
-        Log.i(TAG, "unregister single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
+        Log.i(TAG, "unregister:" + register.getClass().getSimpleName() + "," +
+                "single_map size:" + single_map.size() + ",subject_map size:" + subject_map.size());
+    }
+
+    /**
+     * 事件发送.
+     *
+     * @param event
+     * @param content
+     */
+    public void send(RxEvent event, EventInfo content) {
+        send(event.getType(), content);
     }
 
     /**
@@ -122,36 +164,85 @@ public class RxBus {
      * @param type
      * @param content
      */
-    public void send(int type, Object content) {
-        send(RxEvent.getEvent(type), content);
+    public void send(int type, EventInfo content) {
+//        Log.i(TAG, "To send event");
+
+        String key = type + "";
+        innerSend(type, key, content);
+
+        if (type % 100 != 0) { // 属于行为,不属于事件
+            key = ((type / 100) * 100) + "";
+            innerSend(type, key, content);
+        }
     }
 
-    /**
-     * 事件发送.
-     *
-     * @param type
-     * @param content
-     */
-    public void send(RxEvent type, Object content) {
-        String key = type.toString();
+    private void innerSend(int type, String key, EventInfo content) {
         List<Subject> subjects = subject_map.get(key);
-
         if (subjects != null && subjects.size() > 0) {
             for (final Subject subject : subjects) {
-                subject.onNext(content);
+                subject.onNext(new KeyValue(type, content));
             }
         }
     }
 
+    /**
+     * 通过反射获取回调的方法
+     *
+     * @param object
+     * @return
+     */
     private Method getMethod(Object object) {
         Class clazz = object.getClass();
         Method method = null;
         try {
-            method = clazz.getMethod("onRxEvent", RxEvent.class, Object.class);
+            method = clazz.getMethod("onRxEvent", RxEvent.class, EventInfo.class);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
         return method;
     }
 
+    /**
+     * 获取一个监听者的唯一标示,通过hashCode允许Activity多次打开进行多次监听
+     * @param event
+     * @param register
+     * @return
+     */
+    private String getUniqueTag(int event,Object register){
+        return new StringBuffer("").append(event).append(register.hashCode()).toString();
+    }
+
+    /**
+     * 建议实体RxJava的Action1
+     */
+    public static class KeyValue implements Serializable{
+        private int key;
+        private EventInfo value;
+
+        public KeyValue(int key, EventInfo value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public int getKey() {
+            return key;
+        }
+
+        public void setKey(int key) {
+            this.key = key;
+        }
+
+        public EventInfo getValue() {
+            return value;
+        }
+
+        public void setValue(EventInfo value) {
+            this.value = value;
+        }
+
+        public String toString(){
+            return new StringBuffer().append(",key:").append(key)
+                    .append("value:").append(value).toString();
+        }
+    }
 }

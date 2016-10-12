@@ -13,22 +13,28 @@ package com.whh.rxbusdemo.rxbus;
  * @date 9/30/16
  */
 public class RxEvent {
-    /**
-     * 差值,每一种RxEvent的起始值差为100
-     */
-    private static final int DVALUE = 100;
+    public static final OrderEvent ORDER = new OrderEvent();
+    public static final AccountEvent ACCOUNT = new AccountEvent();
+    public static final NoticeEvent NOTICE = new NoticeEvent();
+    public static final LruEvent Lru = new LruEvent();
 
     /**
      * 事件的标示
      */
     private int type = 0;
 
-    public static final OrderEvent ORDER = new OrderEvent();
-    public static final AccountEvent ACCOUNT = new AccountEvent();
-    public static final NoticeEvent NOTICE = new NoticeEvent();
+    /**
+     * 事件的发送者
+     */
+    private Object sender=null;
 
     public RxEvent(int type) {
         this.type = type;
+    }
+
+    public RxEvent(int type, Object sender) {
+        this.type = type;
+        this.sender = sender;
     }
 
     /**
@@ -38,39 +44,30 @@ public class RxEvent {
      */
     @Override
     public String toString() {
-        return type + "";
+        return "event type:"+type;
     }
 
     public int getType() {
         return type;
     }
 
-    /**
-     * 通过事件的行为获取该行为归属的事件,如果找不到则返回为空事件
-     *
-     * @param option 事件的行为
-     * @return
-     */
-    public static RxEvent getEvent(int option) {
-        RxEvent rxevent = new RxEvent.NullEvent();
-        if (option - ORDER.getType() < DVALUE) {
-            rxevent = ORDER;
-        } else if (option - ACCOUNT.getType() < DVALUE) {
-            rxevent = ACCOUNT;
-        } else if (option - NOTICE.getType() < DVALUE) {
-            rxevent = NOTICE;
-        }
-        if (rxevent instanceof RxEvent.NullEvent) {
-            new Exception("No event match this type error,type:" + option).printStackTrace();
-        }
-        return rxevent;
+    public void setType(int type) {
+        this.type=type;
+    }
+
+    public Object getSender() {
+        return sender;
+    }
+
+    public void setSender(Object sender) {
+        this.sender = sender;
     }
 
     /**
      * 订单事件
      */
     public static class OrderEvent extends RxEvent {
-        private static final int VALUE = 100;
+        public static final int VALUE = 100;
 
         public static final int CHANGE_PRICE = VALUE + 1;
         public static final int HAS_PAY = VALUE + 2;
@@ -86,7 +83,7 @@ public class RxEvent {
      * 账期事件
      */
     public static class AccountEvent extends RxEvent {
-        private static final int VALUE = 200;
+        public static final int VALUE = 200;
 
         public static final int HAS_PAY = VALUE + 1;
 
@@ -100,7 +97,7 @@ public class RxEvent {
      * 通知消息事件
      */
     public static class NoticeEvent extends RxEvent {
-        private static final int VALUE = 300;
+        public static final int VALUE = 300;
 
         public static final int HAS_READ = VALUE + 1;
 
@@ -111,15 +108,54 @@ public class RxEvent {
     }
 
     /**
+     * 登录,注册事件(Login and register of user==Lru)
+     */
+    public static class LruEvent extends RxEvent {
+        public static final int VALUE = 400;
+
+        /**
+         * 需要重新登录
+         */
+        public static final int RE_LOGIN = VALUE + 1;
+
+        /**
+         * 登录成功
+         */
+        public static final int LOGIN_SUCCESS = VALUE + 2;
+
+        /**
+         * 登录失败
+         */
+        public static final int LOGIN_FAILED = VALUE + 3;
+
+        public LruEvent() {
+            super(VALUE);
+        }
+
+    }
+
+    /**
      * 空事件.
      * <p>
      * 如果通过事件的行为判定不出它属于哪种事件,那么它将被归属为空事件.
+     *
      */
     public static class NullEvent extends RxEvent {
-        private static final int VALUE = 0;
+        public static final int VALUE = 0;
 
+        /**
+         * 默认构造函数
+         */
         public NullEvent() {
             super(VALUE);
         }
+
+        /**
+         * @param value 事件行为标示
+         */
+        public NullEvent(int value) {
+            super(value);
+        }
     }
+
 }

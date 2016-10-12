@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">RxBus</string>
+
+    <string name="first_fragment">first_fragment</string>
+
+    <string name="second_fragment">second_fragment</string>
 </resources>

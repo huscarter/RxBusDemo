@@ -8,7 +8,7 @@ import android.widget.TextView;
 import com.whh.rxbusdemo.R;
 import com.whh.rxbusdemo.rxbus.EventInfo;
 import com.whh.rxbusdemo.rxbus.RxEvent;
-import com.whh.rxbusdemo.rxbus.RxEvent;
+
 
 public class SecondActivity extends BaseActivity {
     private static final String TAG=SecondActivity.class.getSimpleName();
@@ -26,19 +26,29 @@ public class SecondActivity extends BaseActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rxbus.send(RxEvent.ORDER.HAS_DISPATCH, System.currentTimeMillis()+",second");
+                rxbus.send(RxEvent.ORDER.HAS_DISPATCH, new EventInfo(System.currentTimeMillis() + ",second"));
+                rxbus.send(RxEvent.Lru, new EventInfo(System.currentTimeMillis() + ",second"));
+                //EventBus.getDefault().post("test");
             }
         });
         tv = (TextView) findViewById(R.id.tv);
     }
 
     /**
-     *
+     * @param event
      * @param content
      */
-    public void onRxEvent(RxEvent type, Object content){
-        Log.i(TAG,"type:"+type.equals(RxEvent.ORDER));
-        tv.setText(content+"");
+    public void onRxEvent(RxEvent event, EventInfo content) {
+        Log.i(TAG,"onRxEvent event:"+event+",info:"+content);
+        tv.setText(content + "");
+        switch (event.getType()){
+            case RxEvent.OrderEvent.VALUE:
+                //
+                break;
+            default:
+                break;
+        }
+
     }
 
     @Override
@@ -49,8 +59,8 @@ public class SecondActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-        rxbus.unregister(RxEvent.ORDER, this);
         super.onDestroy();
+        rxbus.unregister(RxEvent.ORDER, this);
     }
 
 }
