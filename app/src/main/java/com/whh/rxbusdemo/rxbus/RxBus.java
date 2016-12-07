@@ -8,9 +8,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
@@ -34,10 +36,15 @@ public class RxBus {
     /**
      * 单例私有构造方法
      */
-    private void RxBus() {
+    private RxBus() {
         //
     }
 
+    /**
+     * 获取单例RxBus，为了对事件有统一的管理，必须是单例模式
+     *
+     * @return
+     */
     public static RxBus getInstance() {
         if (instance == null) {
             synchronized (RxBus.class) {
@@ -71,18 +78,26 @@ public class RxBus {
         return register(event.getType(), register, AndroidSchedulers.mainThread());
     }
 
+    /**
+     * 事件注册
+     *
+     * @param event
+     * @param register
+     * @param scheduler
+     * @return
+     */
     public synchronized Observable register(final int event, final Object register, Scheduler scheduler) {
-        return register(event,register,
-        new Action1<KeyValue>() {
-            @Override
-            public void call(KeyValue obj) {
-                try {
-                    getMethod(register).invoke(register, new RxEvent(obj.getKey()), obj.getValue());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        },scheduler);
+        return register(event, register,
+                new Action1<KeyValue>() {
+                    @Override
+                    public void call(KeyValue obj) {
+                        try {
+                            getMethod(register).invoke(register, new RxEvent(obj.getKey()), obj.getValue());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, scheduler);
     }
 
     /**
@@ -93,9 +108,9 @@ public class RxBus {
      * @param event 注册标示
      * @return register 注册的对象
      */
-    public synchronized Observable register(final int event, final Object register, final Action1 action1,Scheduler scheduler) {
+    public synchronized Observable register(final int event, final Object register, final Action1 action1, Scheduler scheduler) {
         String key = event + "";
-        String tag = getUniqueTag(event,register);
+        String tag = getUniqueTag(event, register);
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
         if (null == subject) {
@@ -120,6 +135,12 @@ public class RxBus {
         return subject;
     }
 
+    /**
+     * 取消监听
+     *
+     * @param event
+     * @param register
+     */
     public void unregister(final RxEvent event, Object register) {
         unregister(event.getType(), register);
     }
@@ -132,7 +153,7 @@ public class RxBus {
      */
     public void unregister(final int event, Object register) {
         String key = event + "";
-        String tag = getUniqueTag(event,register);
+        String tag = getUniqueTag(event, register);
         Subject subject = single_map.get(tag);
         List<Subject> subjects = subject_map.get(key);
         if (null != subjects) {
@@ -155,7 +176,7 @@ public class RxBus {
      * @param content
      */
     public void send(RxEvent event, EventInfo content) {
-        send(event.getType(), content);
+        send(event.getType(), content, 0);
     }
 
     /**
@@ -165,22 +186,37 @@ public class RxBus {
      * @param content
      */
     public void send(int type, EventInfo content) {
+        send(type, content, 0);
+    }
+
+    /**
+     *
+     * @param type 事件行为
+     * @param content 事件传递的信息
+     * @param delay 时间触发的时间
+     */
+    public void send(int type, EventInfo content, int delay) {
 //        Log.i(TAG, "To send event");
 
         String key = type + "";
-        innerSend(type, key, content);
+        innerSend(type, key, content, delay);
 
         if (type % 100 != 0) { // 属于行为,不属于事件
             key = ((type / 100) * 100) + "";
-            innerSend(type, key, content);
+            innerSend(type, key, content, delay);
         }
     }
 
-    private void innerSend(int type, String key, EventInfo content) {
+    private void innerSend(final int type, final String key, final EventInfo content, final int delay) {
         List<Subject> subjects = subject_map.get(key);
         if (subjects != null && subjects.size() > 0) {
             for (final Subject subject : subjects) {
-                subject.onNext(new KeyValue(type, content));
+                Observable.create(new Observable.OnSubscribe<Object>() {
+                    @Override
+                    public void call(Subscriber<? super Object> subscriber) {
+                        subscriber.onNext(new KeyValue(type, content));
+                    }
+                }).delay(delay, TimeUnit.MILLISECONDS).subscribe(subject);
             }
         }
     }
@@ -204,18 +240,19 @@ public class RxBus {
 
     /**
      * 获取一个监听者的唯一标示,通过hashCode允许Activity多次打开进行多次监听
+     *
      * @param event
      * @param register
      * @return
      */
-    private String getUniqueTag(int event,Object register){
+    private String getUniqueTag(int event, Object register) {
         return new StringBuffer("").append(event).append(register.hashCode()).toString();
     }
 
     /**
-     * 建议实体RxJava的Action1
+     * 实体RxJava的Action1
      */
-    public static class KeyValue implements Serializable{
+    public static class KeyValue implements Serializable {
         private int key;
         private EventInfo value;
 
@@ -240,7 +277,7 @@ public class RxBus {
             this.value = value;
         }
 
-        public String toString(){
+        public String toString() {
             return new StringBuffer().append(",key:").append(key)
                     .append("value:").append(value).toString();
         }
